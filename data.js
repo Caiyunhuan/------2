@@ -1,5 +1,5 @@
 // 本文件由 Python 脚本自动生成
-// const ALL_CASES_DATA = {
+const ALL_CASES_DATA = {
     "A0001": {
         "id": "A0001",
         "type": "商业建筑",
