@@ -245,8 +245,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// ================= 5. 数据校验与收集 =================
 
+// ================= 5. 数据校验与收集 (新版：带排序前缀) =================
+
+/**
+ * 校验函数 (保持不变，但为了完整性我贴在这里，您可以直接一起替换)
+ */
 function validateForm() {
     let isValid = true;
     let errorMsg = [];
@@ -300,63 +304,95 @@ function validateForm() {
     return isValid;
 }
 
+/**
+ * 核心功能：收集页面上所有的填写数据
+ * (✅ 已按要求添加 1_ 2_ 前缀，确保 Firebase 显示顺序一致)
+ */
 function collectFormData() {
+    // 0. 获取基础信息
     const urlParams = new URLSearchParams(window.location.search);
     const caseId = urlParams.get('id') || "UnknownID";
     const timestamp = new Date().toISOString();
 
+    // ================= 1. 风貌特征描述 =================
     const featureAgree = document.querySelector('input[name="featureAgree"]:checked')?.value;
-    const featureContent = (featureAgree === 'no') 
-        ? document.getElementById('featureEditable').value 
-        : document.getElementById('aiFeatureText').innerText; 
-
-    const complianceData = {
-        overall_agree: document.querySelector('input[name="complianceAgree"]:checked')?.value
-    };
+    let featureFinalContent = "";
     
+    // 逻辑：同意 -> 存AI原文；不同意 -> 存输入框内容
+    if (featureAgree === 'yes') {
+        featureFinalContent = document.getElementById('aiFeatureText')?.innerText || "";
+    } else {
+        featureFinalContent = document.getElementById('featureEditable')?.value || "";
+    }
+
+    // ================= 2. 合规性研判 =================
+    const complianceAgree = document.querySelector('input[name="complianceAgree"]:checked')?.value;
+    const complianceDetails = {};
+
+    // 遍历 5 个子项，分别判断
     ['color', 'material', 'style', 'facade', 'volume'].forEach(key => {
         const subAgree = document.querySelector(`input[name="comp_${key}_agree"]:checked`)?.value;
-        let finalContent = "";
-        if (subAgree === 'no') {
-            finalContent = document.getElementById(`edit_${key}`)?.value || "";
+        let subContent = "";
+
+        // 逻辑：同意 -> 存左侧只读内容；不同意 -> 存编辑框内容
+        if (subAgree === 'yes') {
+            subContent = document.getElementById(`view_${key}`)?.innerText || "";
         } else {
-            finalContent = document.getElementById(`view_${key}`)?.innerText || "";
+            subContent = document.getElementById(`edit_${key}`)?.value || "";
         }
-        complianceData[key] = { agree: subAgree, content: finalContent };
+
+        complianceDetails[key] = {
+            status: subAgree, // yes 或 no
+            content: subContent
+        };
     });
 
+    // ================= 3. 风貌品质研判 (评分) =================
     const scores = {};
     const categories = ['coordination', 'continuity', 'innovation'];
     const subItems = ['color', 'material', 'style', 'facade', 'volume'];
 
     categories.forEach(cat => {
         scores[cat] = { sub_items: {} };
+        // 收集子项分
         subItems.forEach(sub => {
             const slider = document.querySelector(`input[name="${cat}_${sub}"]`);
             const reasonBox = slider ? slider.nextElementSibling : null; 
             if (slider) {
                 scores[cat].sub_items[sub] = {
                     score: slider.value,
-                    reason: reasonBox ? reasonBox.value : ""
+                    reason: reasonBox ? reasonBox.value : "" // 收集原因
                 };
             }
         });
+        // 收集大类均分
         const totalSpan = document.getElementById(`score_${cat}_total`);
         if (totalSpan) scores[cat].average = totalSpan.innerText;
     });
 
-    const suggestion = document.querySelector('textarea[name="optimizationSuggestion"]')?.value || "";
-    const conclusion = document.querySelector('input[name="finalConclusion"]:checked')?.value || "";
+    // ================= 4. 优化建议 =================
+    const suggestion = document.querySelector('textarea[name="optimizationSuggestion"]')?.value || "无";
 
+    // ================= 5. 最终结论 =================
+    const conclusion = document.querySelector('input[name="finalConclusion"]:checked')?.value || "未选择";
+
+    // ================= 最终组装 =================
     return {
         case_id: caseId,
         submit_time: timestamp,
+        // ✅ 关键修改：这里加上数字前缀，Firebase 就会按 1-5 顺序显示
         data: {
-            feature_check: { agree: featureAgree, final_text: featureContent },
-            compliance_check: complianceData,
-            quality_scores: scores,
-            optimization: suggestion,
-            conclusion: conclusion
+            "1_feature_check": {
+                status: featureAgree,
+                final_content: featureFinalContent
+            },
+            "2_compliance_check": {
+                overall_status: complianceAgree,
+                details: complianceDetails
+            },
+            "3_quality_scores": scores,
+            "4_optimization": suggestion,
+            "5_conclusion": conclusion
         }
     };
 }
