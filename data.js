@@ -17,7 +17,7 @@ const ALL_CASES_DATA = {
                 "assets/A0001/collage/A0001_train_01_collage.png"
             ],
             "volume": [
-                "assets/A0001/volume/A0002_train_06_Volume.png"
+                "assets/A0001/volume/A0001.jpg"
             ]
         },
         "status": "pending",
@@ -42,7 +42,7 @@ const ALL_CASES_DATA = {
                 "assets/A0002/collage/A0002_train_05_collage.png"
             ],
             "volume": [
-                "assets/A0002/volume/A0002_train_06_Volume.png"
+                "assets/A0002/volume/A0002_2.jpg"
             ]
         },
         "status": "pending",
