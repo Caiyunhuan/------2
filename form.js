@@ -85,12 +85,13 @@ function parseAiCompliance(fullText) {
 
     if (!fullText) return result;
 
+// ✅ 修正版：加入了 \s* 以兼容空格
     const patterns = [
-        { key: 'color', start: /1\.色彩合规性/i, end: /2\.材质合规性/i },
-        { key: 'material', start: /2\.材质合规性/i, end: /3\.风格合规性/i },
-        { key: 'style', start: /3\.风格合规性/i, end: /4\.立面合规性/i },
-        { key: 'facade', start: /4\.立面合规性/i, end: /5\.体量合规性/i },
-        { key: 'volume', start: /5\.体量合规性/i, end: /$/ }
+        { key: 'color',    start: /1\.\s*色彩合规性/i, end: /2\.\s*材质合规性/i },
+        { key: 'material', start: /2\.\s*材质合规性/i, end: /3\.\s*风格合规性/i },
+        { key: 'style',    start: /3\.\s*风格合规性/i, end: /4\.\s*立面合规性/i },
+        { key: 'facade',   start: /4\.\s*立面合规性/i, end: /5\.\s*体量合规性/i },
+        { key: 'volume',   start: /5\.\s*体量合规性/i, end: /$/ }
     ];
 
     patterns.forEach(p => {
