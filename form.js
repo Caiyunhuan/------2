@@ -85,13 +85,16 @@ function parseAiCompliance(fullText) {
 
     if (!fullText) return result;
 
-// ✅ 修正版：加入了 \s* 以兼容空格
-    const patterns = [
-        { key: 'color',    start: /1\.\s*色彩合规性/i, end: /2\.\s*材质合规性/i },
-        { key: 'material', start: /2\.\s*材质合规性/i, end: /3\.\s*风格合规性/i },
-        { key: 'style',    start: /3\.\s*风格合规性/i, end: /4\.\s*立面合规性/i },
-        { key: 'facade',   start: /4\.\s*立面合规性/i, end: /5\.\s*体量合规性/i },
-        { key: 'volume',   start: /5\.\s*体量合规性/i, end: /$/ }
+// ✅ 万能修正版：
+    // 1. (?:...)? 表示数字前缀是“可选”的（有的案例有1.，有的没）
+    // 2. \s* 允许任意空格
+    // 3. [*#]* 兼容可能出现的markdown符号
+ const patterns = [
+        { key: 'color',    start: /(?:1[\.、])?\s*[*#]*\s*色彩合规性/i, end: /(?:2[\.、])?\s*[*#]*\s*材质合规性/i },
+        { key: 'material', start: /(?:2[\.、])?\s*[*#]*\s*材质合规性/i, end: /(?:3[\.、])?\s*[*#]*\s*风格合规性/i },
+        { key: 'style',    start: /(?:3[\.、])?\s*[*#]*\s*风格合规性/i, end: /(?:4[\.、])?\s*[*#]*\s*立面合规性/i },
+        { key: 'facade',   start: /(?:4[\.、])?\s*[*#]*\s*立面合规性/i, end: /(?:5[\.、])?\s*[*#]*\s*体量合规性/i },
+        { key: 'volume',   start: /(?:5[\.、])?\s*[*#]*\s*体量合规性/i, end: /$/ }
     ];
 
     patterns.forEach(p => {
