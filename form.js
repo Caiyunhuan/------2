@@ -310,7 +310,7 @@ function validateForm() {
 
 /**
  * 核心功能：收集页面上所有的填写数据
- * (✅ 已按要求添加 1_ 2_ 前缀，确保 Firebase 显示顺序一致)
+ * (✅ 修复版：总开关选“同意”时，自动抓取左侧AI内容上传)
  */
 function collectFormData() {
     // 0. 获取基础信息
@@ -329,22 +329,41 @@ function collectFormData() {
         featureFinalContent = document.getElementById('featureEditable')?.value || "";
     }
 
-    // ================= 2. 合规性研判 =================
+    // ================= 2. 合规性研判 (重点修改区域) =================
     const complianceAgree = document.querySelector('input[name="complianceAgree"]:checked')?.value;
     const complianceDetails = {};
 
-    // 遍历 5 个子项，分别判断
+    // 🟢 新增步骤：先解析左侧的大模型内容，以备使用
+    const aiContentDiv = document.getElementById('aiComplianceText');
+    const fullText = aiContentDiv ? aiContentDiv.innerText : "";
+    // 直接调用已有的解析函数
+    const aiParsedData = parseAiCompliance(fullText);
+
+    // 遍历 5 个子项
     ['color', 'material', 'style', 'facade', 'volume'].forEach(key => {
-        const subAgree = document.querySelector(`input[name="comp_${key}_agree"]:checked`)?.value;
+        let subAgree = "";
         let subContent = "";
 
-        // 逻辑：同意 -> 存左侧只读内容；不同意 -> 存编辑框内容
-        if (subAgree === 'yes') {
-            subContent = document.getElementById(`view_${key}`)?.innerText || "";
+        if (complianceAgree === 'yes') {
+            // 🌟 情况 A：总开关选了“同意”
+            // 此时强制所有子项状态为 yes，并直接使用解析好的AI内容
+            subAgree = 'yes';
+            subContent = aiParsedData[key] || "未读取到内容"; 
         } else {
-            subContent = document.getElementById(`edit_${key}`)?.value || "";
+            // 🌟 情况 B：总开关选了“否”（用户展开了子项）
+            // 此时读取用户在界面上的具体操作
+            subAgree = document.querySelector(`input[name="comp_${key}_agree"]:checked`)?.value;
+            
+            if (subAgree === 'yes') {
+                // 子项同意：尝试取界面上的字 (防备用户改过html)，取不到就用解析好的备用
+                subContent = document.getElementById(`view_${key}`)?.innerText || aiParsedData[key] || "";
+            } else {
+                // 子项修改：取输入框内容
+                subContent = document.getElementById(`edit_${key}`)?.value || "";
+            }
         }
 
+        // 保持原有的数据结构不变
         complianceDetails[key] = {
             status: subAgree, // yes 或 no
             content: subContent
@@ -384,7 +403,7 @@ function collectFormData() {
     return {
         case_id: caseId,
         submit_time: timestamp,
-        // ✅ 关键修改：这里加上数字前缀，Firebase 就会按 1-5 顺序显示
+        // ✅ 这里的结构保持完全一致
         data: {
             "1_feature_check": {
                 status: featureAgree,
